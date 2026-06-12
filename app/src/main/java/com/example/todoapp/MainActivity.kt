@@ -5,13 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,11 +23,11 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +44,8 @@ import com.example.todoapp.repository.TodoRepository
 import com.example.todoapp.ui.theme.TodoAppTheme
 import com.example.todoapp.viewmodel.TodoViewModel
 import com.example.todoapp.viewmodel.TodoViewModelFactory
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 
 class MainActivity : ComponentActivity() {
     @ExperimentalMaterial3Api
@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             TodoAppTheme {
+
                 var showAddTodoDialog by remember {
                     mutableStateOf(false)
                 }
@@ -75,15 +76,17 @@ class MainActivity : ComponentActivity() {
                     TodoRepository(database.todoDao())
                 }
 
-                val viewModel: TodoViewModel = viewModel (
+                val viewModel: TodoViewModel = viewModel(
                     factory = TodoViewModelFactory(repository)
                 )
 
                 val todoItemList by viewModel.todos.collectAsStateWithLifecycle()
 
+
                 var selectedTodoItem by remember {
                     mutableStateOf<TodoEntity?>(null)
                 }
+
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -102,82 +105,109 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) { innerPadding ->
-                    Column (
+
+                    Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(innerPadding)
                     ) {
 
-                        Box(
+
+                        TopAppBar(
+                            title = {
+                                Text("Task Manager")
+                            }
+                        )
+
+                        val completedTasks = todoItemList.count { it.isCompleted }
+
+                        Text(
+                            text = "Total Tasks: ${todoItemList.size}",
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+
+                        Text(
+                            text = "Completed: $completedTasks",
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        LazyColumn(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp),
-                            contentAlignment = Alignment.Center
+                                .fillMaxSize()
+                                .padding(16.dp)
                         ) {
-                            Text(
-                                text = "Todo App",
-                                style = MaterialTheme.typography.headlineSmall
-                            )
-                        }
-                    }
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .padding(16.dp)
-                    ) {
 
-                        itemsIndexed(todoItemList) { _, item ->
+                            if (todoItemList.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = "No tasks yet. Tap + to add one!",
+                                        modifier = Modifier.padding(16.dp)
+                                    )
+                                }
+                            }
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            itemsIndexed(todoItemList) { _, item ->
 
-                                Row(
-                                    modifier = Modifier.weight(1f),
-                                    verticalAlignment = Alignment.CenterVertically
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp),
+                                    elevation = CardDefaults.cardElevation(
+                                        defaultElevation = 4.dp
+                                    )
                                 ) {
 
-                                    Checkbox(
-                                        checked = item.isCompleted,
-                                        onCheckedChange = { newValue ->
-                                            viewModel.updateTodo(
-                                                item.copy(
-                                                    isCompleted = newValue
-                                                )
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+
+                                        Row(
+                                            modifier = Modifier.weight(1f),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+
+                                            Checkbox(
+                                                checked = item.isCompleted,
+                                                onCheckedChange = { newValue ->
+                                                    viewModel.updateTodo(
+                                                        item.copy(
+                                                            isCompleted = newValue
+                                                        )
+                                                    )
+                                                }
                                             )
+
+                                            Text(text = item.todoTitle)
                                         }
-                                    )
 
-                                    Text(text = item.todoTitle)
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = "Edit Todo",
+                                            modifier = Modifier.clickable {
+                                                selectedTodoItem = item
+                                                todoTitle = item.todoTitle
+                                                showAddTodoDialog = true
+                                            }
+                                        )
+
+                                        Spacer(modifier = Modifier.width(16.dp))
+
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete Todo",
+                                            modifier = Modifier.clickable {
+                                                selectedTodoItem = item
+                                                showDeleteTodoDialog = true
+                                            }
+                                        )
+                                    }
                                 }
-
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit Todo",
-                                    modifier = Modifier.clickable {
-                                        selectedTodoItem = item
-                                        todoTitle = item.todoTitle
-                                        showAddTodoDialog = true
-                                    }
-                                )
-
-                                Spacer(modifier = Modifier.width(16.dp))
-
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete Todo",
-                                    modifier = Modifier.clickable {
-                                        selectedTodoItem = item
-                                        showDeleteTodoDialog = true
-                                    }
-                                )
                             }
                         }
                     }
+                }
 
                     if (showAddTodoDialog) {
 
@@ -241,7 +271,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
+
 
 @Composable
 fun AddTodoDialog(

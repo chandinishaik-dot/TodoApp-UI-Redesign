@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.todoapp"
+        applicationId = "com.example.todoapp.redesign"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
